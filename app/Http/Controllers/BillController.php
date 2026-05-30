@@ -126,5 +126,23 @@ class BillController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }// --- FUNGSI UNTUK MENGHAPUS TAGIHAN ---
+    public function destroy($id)
+    {
+        // 1. Cari tagihan berdasarkan ID
+        $bill = \App\Models\Bill::find($id);
+
+        if (!$bill) {
+            return response()->json(['message' => 'Tagihan tidak ditemukan'], 404);
+        }
+
+        // 2. Hapus dulu anak-anaknya (Partisipan) biar MySQL gak marah
+        $bill->participants()->delete();
+
+        // 3. Hapus induknya (Tagihannya)
+        $bill->delete();
+
+        // 4. Kasih tau Frontend kalau sukses
+        return response()->json(['message' => 'Tagihan berhasil dihapus permanen!'], 200);
     }
 }
