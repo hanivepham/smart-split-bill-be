@@ -1,0 +1,44 @@
+### TEST 1 - Cek Lemari Kosong (GET)
+GET http://127.0.0.1:8000/api/bills
+Accept: application/json
+
+### TEST 2 - Simpan Tagihan Baru (POST)
+POST http://127.0.0.1:8000/api/bills
+Accept: application/json
+Content-Type: application/json
+
+{
+    "subtotal": 120000,
+    "discount": 10000,
+    "delivery_fee": 15000,
+    "service_fee": 5000,
+    "packaging_fee": 2000,
+    "tax_amount": 1200,
+    "grand_total": 133200,
+    "split_method": "custom",
+    "participants": [
+        {
+            "name": "Akmal",
+            "amount_due": 55000
+        },
+        {
+            "name": "Hanif",
+            "amount_due": 45000
+        },
+        {
+            "name": "Ahmad",
+            "amount_due": 33200
+        }
+    ]
+}
+### TEST 3 - Uji Coba Satpam Validasi (Error Test)
+POST http://127.0.0.1:8000/api/bills
+Accept: application/json
+Content-Type: application/json
+
+{
+    "subtotal": -500,
+    "grand_total": "bukan angka",
+    "split_method": "bayar_sendiri",
+    "participants": []
+}
