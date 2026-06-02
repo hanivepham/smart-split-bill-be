@@ -126,7 +126,36 @@ class BillController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
-    }// --- FUNGSI UNTUK MENGHAPUS TAGIHAN ---
+    }
+
+    /**
+     * ════════════════════════════════════════════════════════════════
+     * GET /api/bills/{id}
+     * Menampilkan detail satu tagihan spesifik berdasarkan ID.
+     * Digunakan untuk fitur Scan QR Code oleh Front-End.
+     * ════════════════════════════════════════════════════════════════
+     */
+    public function show($id): JsonResponse
+    {
+        try {
+            // with('participants') memuat relasi agar rincian utuh
+            // findOrFail($id) akan memicu ModelNotFoundException jika ID tidak ada
+            $bill = Bill::with('participants')->findOrFail($id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $bill,
+            ], 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            // Tangani error jika ID tidak ditemukan dengan response JSON 404
+            return response()->json([
+                'success' => false,
+                'message' => 'Tagihan tidak ditemukan.',
+            ], 404);
+        }
+    }
+
+    // --- FUNGSI UNTUK MENGHAPUS TAGIHAN ---
     public function destroy($id)
     {
         // 1. Cari tagihan berdasarkan ID

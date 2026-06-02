@@ -20,5 +20,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/bills', [BillController::class, 'index']);
+Route::get('/bills/{id}', [BillController::class, 'show']);
 Route::post('/bills', [BillController::class, 'store']);
 Route::delete('/bills/{id}', [App\Http\Controllers\BillController::class, 'destroy']);
