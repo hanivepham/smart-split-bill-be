@@ -29,4 +29,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the bills for the user.
+     */
+    public function bills()
+    {
+        return $this->hasMany(Bill::class);
+    }
 }

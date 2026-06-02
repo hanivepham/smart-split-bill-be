@@ -8,6 +8,7 @@ use App\Models\Bill;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class BillController extends Controller
 {
@@ -46,6 +47,14 @@ class BillController extends Controller
     {
         // ── LANGKAH 1: VALIDASI ──────────────────────────────────────────────
         //
+        // Jika participants dikirim sebagai string JSON (misal dari FormData multipart/form-data),
+        // kita perlu men-decode-nya menjadi array sebelum divalidasi.
+        if ($request->has('participants') && is_string($request->participants)) {
+            $request->merge([
+                'participants' => json_decode($request->participants, true)
+            ]);
+        }
+        //
         // $request->validate() akan OTOMATIS mengembalikan response JSON 422
         // (Unprocessable Entity) jika ada aturan yang dilanggar — SELAMA
         // request memiliki header "Accept: application/json".
@@ -61,6 +70,14 @@ class BillController extends Controller
             'tax_amount' => 'nullable|numeric|min:0',
             'grand_total' => 'required|numeric|min:0',
             'split_method' => 'required|in:rata,custom',
+
+            // Data Metode Pembayaran
+            'payment_type' => 'nullable|string|in:rekening,qr',
+            'bank_name' => 'nullable|string|max:255',
+            'account_number' => 'nullable|string|max:255',
+            'account_name' => 'nullable|string|max:255',
+            'qr_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120', // Maksimal 5MB
+
 
             // Data Peserta (array of objects)
             'participants' => 'required|array|min:1',
@@ -81,8 +98,16 @@ class BillController extends Controller
         //   Jika semua berhasil → COMMIT (semua perubahan disimpan permanen).
         //   Inilah prinsip ATOMICITY dalam ACID database.
         //
+        // Handle upload gambar QR jika ada (dan jika payment_type = qr)
+        $qrImagePath = null;
+        if ($request->hasFile('qr_image')) {
+            // Simpan gambar ke folder 'qris' di dalam storage public
+            $qrImagePath = $request->file('qr_image')->store('qris', 'public');
+        }
+
         try {
-            $bill = DB::transaction(function () use ($request) {
+            $bill = DB::transaction(function () use ($request, $qrImagePath) {
+
 
                 // Simpan data tagihan utama ke tabel bills
                 // '?? 0' = jika nilai null (tidak dikirim Frontend), gunakan 0
@@ -95,6 +120,11 @@ class BillController extends Controller
                     'tax_amount' => $request->tax_amount ?? 0,
                     'grand_total' => $request->grand_total,
                     'split_method' => $request->split_method,
+                    'payment_type' => $request->payment_type,
+                    'bank_name' => $request->bank_name,
+                    'account_number' => $request->account_number,
+                    'account_name' => $request->account_name,
+                    'qr_image_path' => $qrImagePath,
                 ]);
 
                 // Simpan semua peserta sekaligus (bulk insert — jauh lebih efisien)
@@ -155,11 +185,33 @@ class BillController extends Controller
         }
     }
 
+    // --- FUNGSI UNTUK MENGHAPUS SEMUA TAGIHAN ---
+    public function deleteAll(): JsonResponse
+    {
+        // Langsung ambil semua tagihan dari database tanpa mengecek user login
+        $bills = Bill::all();
+
+        foreach ($bills as $bill) {
+            // 1. Hapus file gambar QRIS jika ada di storage
+            if ($bill->qr_image_path && Storage::disk('public')->exists($bill->qr_image_path)) {
+                Storage::disk('public')->delete($bill->qr_image_path);
+            }
+
+            // 2. Hapus data partisipan biar MySQL nggak error
+            $bill->participants()->delete();
+
+            // 3. Hapus tagihan utama
+            $bill->delete();
+        }
+
+        return response()->json(['message' => 'Semua riwayat berhasil dihapus'], 200);
+    }
+
     // --- FUNGSI UNTUK MENGHAPUS TAGIHAN ---
     public function destroy($id)
     {
         // 1. Cari tagihan berdasarkan ID
-        $bill = \App\Models\Bill::find($id);
+        $bill = Bill::find($id);
 
         if (!$bill) {
             return response()->json(['message' => 'Tagihan tidak ditemukan'], 404);

@@ -22,4 +22,10 @@ use Illuminate\Support\Facades\Route;
 Route::get('/bills', [BillController::class, 'index']);
 Route::get('/bills/{id}', [BillController::class, 'show']);
 Route::post('/bills', [BillController::class, 'store']);
-Route::delete('/bills/{id}', [App\Http\Controllers\BillController::class, 'destroy']);
+
+// PENTING: Route delete-all diletakkan SEBELUM delete/{id} 
+// agar 'delete-all' tidak terbaca sebagai parameter {id}.
+Route::delete('/bills/delete-all', [BillController::class, 'deleteAll']);
+
+// Route dengan parameter dinamis {id} diletakkan di bawah
+Route::delete('/bills/{id}', [BillController::class, 'destroy']);

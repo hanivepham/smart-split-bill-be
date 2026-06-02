@@ -25,6 +25,11 @@ class Bill extends Model
         'tax_amount',
         'grand_total',
         'split_method',
+        'payment_type',
+        'bank_name',
+        'account_number',
+        'account_name',
+        'qr_image_path',
     ];
 
     /**
@@ -50,6 +55,13 @@ class Bill extends Model
      * Eloquent otomatis mencari Foreign Key 'bill_id' di tabel participants.
      * Penggunaan: $bill->participants   → koleksi semua peserta bill ini.
      */
+    protected $appends = ['qr_image_url'];
+
+    public function getQrImageUrlAttribute()
+    {
+        return $this->qr_image_path ? asset('storage/' . $this->qr_image_path) : null;
+    }
+
     public function participants(): HasMany
     {
         return $this->hasMany(Participant::class);
