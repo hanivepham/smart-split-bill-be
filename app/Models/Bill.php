@@ -1,7 +1,5 @@
 <?php
 
-// app/Models/Bill.php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -11,10 +9,6 @@ class Bill extends Model
 {
     /**
      * $fillable adalah "whitelist" kolom yang boleh diisi via Mass Assignment.
-     * 
-     * Mass Assignment = mengisi model dari array sekaligus, contoh: Bill::create([...])
-     * Tanpa $fillable, Laravel MENOLAK semua Mass Assignment sebagai proteksi keamanan
-     * (mencegah user mengirim kolom berbahaya seperti 'is_admin' secara sembunyii).
      */
     protected $fillable = [
         'subtotal',
@@ -25,19 +19,15 @@ class Bill extends Model
         'tax_amount',
         'grand_total',
         'split_method',
+        'qr_image_path',
         'payment_type',
         'bank_name',
         'account_number',
-        'account_name',
-        'qr_image_path',
+        'account_name' // Nggak ada yang double lagi, udah rapi!
     ];
 
     /**
      * $casts memastikan tipe data dikembalikan dengan benar di JSON response.
-     * 
-     * Tanpa ini, nilai decimal dari MySQL bisa dikembalikan sebagai string biasa
-     * seperti "120000" (tanpa format). Dengan 'decimal:2', nilainya menjadi "120000.00"
-     * yang konsisten dan mudah diproses oleh Frontend.
      */
     protected $casts = [
         'subtotal' => 'decimal:2',
@@ -47,13 +37,14 @@ class Bill extends Model
         'packaging_fee' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'grand_total' => 'decimal:2',
+        'payment_type' => 'string',
+        'bank_name' => 'string',
+        'account_number' => 'string',
+        'account_name' => 'string'
     ];
 
     /**
      * RELASI: Satu Bill MEMILIKI BANYAK Participants (One-to-Many).
-     * 
-     * Eloquent otomatis mencari Foreign Key 'bill_id' di tabel participants.
-     * Penggunaan: $bill->participants   → koleksi semua peserta bill ini.
      */
     protected $appends = ['qr_image_url'];
 
