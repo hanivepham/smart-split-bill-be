@@ -44,16 +44,16 @@ class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'email' => ['Kredensial yang diberikan tidak cocok dengan data kami.'],
-            ]);
+        if (! $user || ! $user->hasVerifiedEmail()) {
+            return response()->json([
+                'message' => 'Email belum terdaftar atau belum terverifikasi'
+            ], 401);
         }
 
-        if (! $user->hasVerifiedEmail()) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json([
-                'message' => 'Email belum terdaftar atau terverifikasi. Silahkan cek email Anda.',
-            ], 403);
+                'message' => 'Password salah'
+            ], 401);
         }
 
         $token = $user->createToken('auth_token')->plainTextToken;
