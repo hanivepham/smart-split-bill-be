@@ -25,7 +25,7 @@ class BillController extends Controller
         // dalam SATU query yang efisien (bukan N+1 query yang lambat).
         //
         // latest() = urutkan berdasarkan created_at DESC (tagihan terbaru di atas)
-        $bills = Bill::with('participants')
+        $bills = auth()->user()->bills()->with('participants')
             ->latest()
             ->get();
 
@@ -112,6 +112,7 @@ class BillController extends Controller
                 // Simpan data tagihan utama ke tabel bills
                 // '?? 0' = jika nilai null (tidak dikirim Frontend), gunakan 0
                 $bill = Bill::create([
+                    'user_id' => auth()->id(),
                     'subtotal' => $request->subtotal,
                     'discount' => $request->discount ?? 0,
                     'delivery_fee' => $request->delivery_fee ?? 0,
@@ -170,7 +171,7 @@ class BillController extends Controller
         try {
             // with('participants') memuat relasi agar rincian utuh
             // findOrFail($id) akan memicu ModelNotFoundException jika ID tidak ada
-            $bill = Bill::with('participants')->findOrFail($id);
+            $bill = auth()->user()->bills()->with('participants')->findOrFail($id);
 
             return response()->json([
                 'success' => true,
@@ -188,8 +189,8 @@ class BillController extends Controller
     // --- FUNGSI UNTUK MENGHAPUS SEMUA TAGIHAN ---
     public function deleteAll(): JsonResponse
     {
-        // Langsung ambil semua tagihan dari database tanpa mengecek user login
-        $bills = Bill::all();
+        // Langsung ambil semua tagihan dari database milik user login
+        $bills = auth()->user()->bills()->get();
 
         foreach ($bills as $bill) {
             // 1. Hapus file gambar QRIS jika ada di storage
@@ -210,11 +211,11 @@ class BillController extends Controller
     // --- FUNGSI UNTUK MENGHAPUS TAGIHAN ---
     public function destroy($id)
     {
-        // 1. Cari tagihan berdasarkan ID
-        $bill = Bill::find($id);
+        // 1. Cari tagihan berdasarkan ID milik user login
+        $bill = auth()->user()->bills()->find($id);
 
         if (!$bill) {
-            return response()->json(['message' => 'Tagihan tidak ditemukan'], 404);
+            return response()->json(['message' => 'Tagihan tidak ditemukan atau Anda tidak memiliki akses'], 404);
         }
 
         // 2. Hapus dulu anak-anaknya (Partisipan) biar MySQL gak marah

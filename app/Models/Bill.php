@@ -11,6 +11,7 @@ class Bill extends Model
      * $fillable adalah "whitelist" kolom yang boleh diisi via Mass Assignment.
      */
     protected $fillable = [
+        'user_id',
         'subtotal',
         'discount',
         'delivery_fee',
@@ -51,6 +52,11 @@ class Bill extends Model
     public function getQrImageUrlAttribute()
     {
         return $this->qr_image_path ? asset('storage/' . $this->qr_image_path) : null;
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function participants(): HasMany
